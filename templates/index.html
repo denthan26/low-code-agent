@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent 智能体低代码平台</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部工具栏 -->
+        <header class="toolbar">
+            <div class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+                <span>Agent Flow</span>
+            </div>
+            <div class="toolbar-actions">
+                <button class="btn btn-primary" id="btnAddInput" onclick="addNode('input')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    输入节点
+                </button>
+                <button class="btn btn-primary" id="btnAddCode" onclick="addNode('code')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    代码节点
+                </button>
+                <button class="btn btn-primary" id="btnAddOutput" onclick="addNode('output')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 11 12 14 22 4"></polyline>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                    输出节点
+                </button>
+                <div class="divider"></div>
+                <button class="btn btn-success" id="btnRun" onclick="runWorkflow()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    运行
+                </button>
+                <button class="btn btn-danger" onclick="clearCanvas()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    清空
+                </button>
+            </div>
+        </header>
+
+        <!-- 主工作区 -->
+        <div class="main-area">
+            <!-- 左侧节点面板（可选，保留扩展性） -->
+            <aside class="sidebar">
+                <h3>节点说明</h3>
+                <div class="node-help">
+                    <div class="help-item">
+                        <span class="dot dot-input"></span>
+                        <div>
+                            <strong>输入节点</strong>
+                            <p>提供初始数据，只能有一个</p>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <span class="dot dot-code"></span>
+                        <div>
+                            <strong>代码节点</strong>
+                            <p>编写Python代码处理数据，可有多个</p>
+                            <small>使用 input_data 获取输入，result 变量输出</small>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <span class="dot dot-output"></span>
+                        <div>
+                            <strong>输出节点</strong>
+                            <p>展示最终结果，只能有一个</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="execution-log" id="executionLog">
+                    <h4>执行日志</h4>
+                    <div class="log-content" id="logContent">
+                        <p class="log-empty">点击「运行」查看执行日志</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 画布区域 -->
+            <div class="canvas-container" id="canvasContainer">
+                <svg class="connections-layer" id="connectionsLayer">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1" />
+                        </marker>
+                    </defs>
+                </svg>
+                <div class="nodes-layer" id="nodesLayer"></div>
+                <div class="canvas-placeholder" id="canvasPlaceholder">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                    </svg>
+                    <p>点击上方按钮添加节点开始构建</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 节点配置弹窗 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">节点配置</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 动态内容 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveNodeConfig()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 运行结果弹窗 -->
+    <div class="modal-overlay" id="resultModalOverlay">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h3>运行结果</h3>
+                <button class="modal-close" onclick="closeResultModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="result-section">
+                    <label>最终输出：</label>
+                    <pre class="result-output" id="resultOutput"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeResultModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
